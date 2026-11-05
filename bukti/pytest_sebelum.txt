@@ -1,0 +1,132 @@
+﻿============================= test session starts =============================
+platform win32 -- Python 3.11.9, pytest-9.2.0, pluggy-1.7.0
+rootdir: D:\Semester_3\Programming Pragmatics\Praktek\ETS\crud-extractor\crud-extractor
+configfile: pytest.ini
+collected 30 items
+
+docs\tests\test_analyzer.py ....F                                        [ 16%]
+docs\tests\test_lexer.py .F...F...                                       [ 46%]
+docs\tests\test_parser.py .......F....                                   [ 86%]
+docs\tests\test_resolver.py ..F.                                         [100%]
+
+================================== FAILURES ===================================
+________________________ test_matrix_laporan_penjualan ________________________
+
+    def test_matrix_laporan_penjualan():
+>       res = analyze_source((DATA / "laporan_penjualan.sql").read_text(encoding="utf-8"))
+                             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+docs\tests\test_analyzer.py:34: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+C:\Users\ERWIN\AppData\Local\Programs\Python\Python311\Lib\pathlib.py:1058: in read_text
+    with self.open(mode='r', encoding=encoding, errors=errors) as f:
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = WindowsPath('D:/Semester_3/Programming Pragmatics/Praktek/ETS/crud-extractor/crud-extractor/docs/data/sample/laporan_penjualan.sql')
+mode = 'r', buffering = -1, encoding = 'utf-8', errors = None, newline = None
+
+    def open(self, mode='r', buffering=-1, encoding=None,
+             errors=None, newline=None):
+        """
+        Open the file pointed by this path and return a file object, as
+        the built-in open() function does.
+        """
+        if "b" not in mode:
+            encoding = io.text_encoding(encoding)
+>       return io.open(self, mode, buffering, encoding, errors, newline)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       FileNotFoundError: [Errno 2] No such file or directory: 'D:\\Semester_3\\Programming Pragmatics\\Praktek\\ETS\\crud-extractor\\crud-extractor\\docs\\data\\sample\\laporan_penjualan.sql'
+
+C:\Users\ERWIN\AppData\Local\Programs\Python\Python311\Lib\pathlib.py:1044: FileNotFoundError
+__________________________ test_keyword_huruf_kecil ___________________________
+
+    def test_keyword_huruf_kecil():
+        toks = tokenize("select id from t")
+>       assert toks[0].type == T.KEYWORD and toks[0].value == "SELECT"
+E       AssertionError: assert (<TokenType.IDENT: 2> == <TokenType.KEYWORD: 1>)
+E        +  where <TokenType.IDENT: 2> = Token(IDENT, 'select', 1:1).type
+E        +  and   <TokenType.KEYWORD: 1> = T.KEYWORD
+
+docs\tests\test_lexer.py:20: AssertionError
+_____________________________ test_komentar_blok ______________________________
+
+    def test_komentar_blok():
+>       toks = tokenize("/* komentar\n   dua baris */ SELECT")
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+docs\tests\test_lexer.py:40: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+crud\lexer.py:186: in tokenize
+    return Lexer(source).tokenize()
+           ^^^^^^^^^^^^^^^^^^^^^^^^
+crud\lexer.py:67: in tokenize
+    self._scan_token()
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = <crud.lexer.Lexer object at 0x00000233AE66E250>
+
+    def _scan_token(self) -> None:
+        line, col = self.line, self.col
+        ch = self._advance()
+    
+        if ch in " \t\r\n":
+            return
+        if ch == "-" and self._peek() == "-":
+            while not self._at_end() and self._peek() != "\n":
+                self._advance()
+            return
+        if ch == "/" and self._peek() == "*":
+            # TODO(T3): dukung komentar blok /* ... */ (SPESIFIKASI.md bagian 2.3).
+>           raise LexError("komentar blok belum didukung", line, col)
+E           crud.lexer.LexError: Baris 1, kolom 1: komentar blok belum didukung
+
+crud\lexer.py:111: LexError
+_____________________________ test_insert_select ______________________________
+
+    def test_insert_select():
+>       s = one("INSERT INTO arsip (id) SELECT id FROM pesanan WHERE total > 10")
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+docs\tests\test_parser.py:53: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+sql = 'INSERT INTO arsip (id) SELECT id FROM pesanan WHERE total > 10'
+
+    def one(sql):
+        script = parse_sql(sql)
+>       assert script.errors == [], script.errors
+E       AssertionError: [ParseError("Baris 1, kolom 24: INSERT ... SELECT belum didukung, ditemukan 'SELECT'")]
+E       assert [ParseError("...an 'SELECT'")] == []
+E         
+E         Left contains one more item: ParseError("Baris 1, kolom 24: INSERT ... SELECT belum didukung, ditemukan 'SELECT'")
+E         Use -v to get more diff
+
+docs\tests\test_parser.py:7: AssertionError
+____________________ test_kolom_tanpa_qualifier_satu_tabel ____________________
+
+    def test_kolom_tanpa_qualifier_satu_tabel():
+        script, diags = resolve("SELECT nama FROM pelanggan WHERE aktif = 1")
+>       assert {c.resolved for c in columns(script)} == {"pelanggan"}
+E       AssertionError: assert {None} == {'pelanggan'}
+E         
+E         Extra items in the left set:
+E         None
+E         Extra items in the right set:
+E         'pelanggan'
+E         Use -v to get more diff
+
+docs\tests\test_resolver.py:33: AssertionError
+============================== warnings summary ===============================
+C:\Users\ERWIN\AppData\Local\Programs\Python\Python311\Lib\site-packages\_pytest\config\__init__.py:1810
+  C:\Users\ERWIN\AppData\Local\Programs\Python\Python311\Lib\site-packages\_pytest\config\__init__.py:1810: PytestConfigWarning: No files were found in testpaths; consider removing or adjusting your testpaths configuration. Searching recursively from the current directory instead.
+    self.args, self.args_source = self._decide_args(
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+=========================== short test summary info ===========================
+FAILED docs/tests/test_analyzer.py::test_matrix_laporan_penjualan - FileNotFo...
+FAILED docs/tests/test_lexer.py::test_keyword_huruf_kecil - AssertionError: a...
+FAILED docs/tests/test_lexer.py::test_komentar_blok - crud.lexer.LexError: Ba...
+FAILED docs/tests/test_parser.py::test_insert_select - AssertionError: [Parse...
+FAILED docs/tests/test_resolver.py::test_kolom_tanpa_qualifier_satu_tabel - A...
+=================== 5 failed, 25 passed, 1 warning in 0.30s ===================
