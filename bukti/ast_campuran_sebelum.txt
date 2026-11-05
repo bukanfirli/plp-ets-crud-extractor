@@ -1,0 +1,19 @@
+﻿===== data\sample\campuran_error.sql =====
+--- baris 2 ---
+Select
+  columns:
+    SelectItem
+      expr:
+        ColumnRef name='id'
+    SelectItem
+      expr:
+        ColumnRef name='nama'
+  sources:
+    TableRef name='pelanggan'
+  where:
+    BinaryOp op='='
+      left:
+        ColumnRef name='aktif'
+      right:
+        Literal value='1' kind='number'
+PARSE ERROR: Baris 4, kolom 17: diharapkan ekspresi, ditemukan 'FROM'
