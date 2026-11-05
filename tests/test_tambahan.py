@@ -95,10 +95,10 @@ def test_bug9_subquery_in_update_is_read():
     assert res_b["pelanggan"] == {"U"}
     assert res_b["level_ref"] == {"R"}
 
-    # (c) UPDATE membaca tabel yang sama lewat subquery: {U, R}
+    # (c) UPDATE membaca tabel lain lewat subquery di WHERE
     ast_c = parse_sql("UPDATE pelanggan SET level = 'gold' WHERE id IN (SELECT pelanggan_id FROM pesanan WHERE total > 100);").statements[0]
     res_c = analyze_statement(ast_c)
-    assert res_c["pelanggan"] == {"U", "R"}
+    assert res_c["pelanggan"] == {"U"}
     assert res_c["pesanan"] == {"R"}
 
     # (d) INSERT ... SELECT: target C, sumber R
