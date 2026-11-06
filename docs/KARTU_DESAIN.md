@@ -1,19 +1,11 @@
 # Kartu Desain
 
-Tuliskan lima keputusan desain penting dalam pekerjaan kalian. Untuk tiap keputusan, sebutkan
-alternatif yang ditolak dan alasannya. Contoh topik (boleh memilih yang lain):
-
-- bagaimana parser membedakan `*` sebagai "semua kolom" dan sebagai perkalian;
-- di mana dan bagaimana presedensi `AND`/`OR` dinyatakan;
-- mengapa error recovery berhenti di `;`, bukan di keyword `SELECT` berikutnya;
-- urutan pencarian scope dan akibatnya pada shadowing serta correlated subquery;
-- mengapa kolom tanpa qualifier hanya dilihat di scope terdalam, dan apa kelemahannya;
-- bagaimana implementasi `INSERT ... SELECT` atau komentar blok kalian.
+Lima keputusan desain penting dalam pekerjaan kami. Untuk tiap keputusan dicantumkan alternatif yang ditolak beserta alasannya.
 
 | No | Keputusan | Alternatif yang ditolak | Alasan |
 | --- | --- | --- | --- |
-| 1 | | | |
-| 2 | | | |
-| 3 | | | |
-| 4 | | | |
-| 5 | | | |
+| 1 | Presedensi AND/OR dinyatakan lewat urutan pemanggilan fungsi: `_expr` memanggil `_or`, `_or` memanggil `_and`, `_and` memanggil `_not`. | Tetap memakai satu fungsi `_logical` untuk OR dan AND, dengan mengatur prioritas secara manual lewat pengondisian di dalam loop. | Satu tingkat grammar dipetakan ke satu fungsi (Bab 6), sehingga mudah dicocokkan dengan SPESIFIKASI 3.1. Satu fungsi untuk dua tingkat adalah akar Bug 4. |
+| 2 | Error recovery memakai panic mode. `_synchronize` membuang token sampai dan termasuk `;` berikutnya, lalu parser lanjut ke statement setelahnya. | Membuang token sampai EOF (kode lama), berhenti total tanpa recovery (fail-fast), atau berhenti di keyword `SELECT` berikutnya. | Titik koma adalah pembatas antar-statement, jadi paling aman dijadikan titik sinkronisasi (Bab 6). Membuang sampai EOF menghilangkan statement valid setelah error (Bug 6). Fail-fast melanggar SPESIFIKASI bagian 6. Berhenti di `SELECT` berisiko karena `SELECT` juga muncul di subquery dan `INSERT ... SELECT`, sehingga satu statement rusak bisa memicu lebih dari satu error. |
+| 3 | Qualifier dicari dari scope terdalam ke luar dengan berjalan dari `self.scope` mengikuti `parent` sampai entri pertama ditemukan. Alias subquery menutupi alias luar (shadowing), dan subquery tetap bisa merujuk alias luar (correlated). | Membangun daftar scope lalu membaliknya dengan `reversed`, atau membangun daftar lalu hanya menghapus `reversed`. | Resolusi nama berhenti di entri pertama dari scope terdalam (Bab 11), sesuai SPESIFIKASI 4.3. Dengan `reversed`, scope luar selalu menang sehingga shadowing tidak pernah terjadi (Bug 7). Membuat daftar juga tidak perlu karena pencarian berhenti di entri pertama. |
+| 4 | Kolom tanpa qualifier hanya dilihat di scope terdalam. Satu tabel: di-resolve ke tabel itu. Lebih dari satu tabel: warning "ambigu tanpa skema" dan `resolved` tetap `None`. Tanpa tabel: warning. Kelemahannya, kolom di subquery yang sebenarnya milik tabel luar tidak ter-resolve. | Mencari ke scope induk bila scope terdalam kosong atau tidak menemukan tabel. | Alternatif itu melanggar SPESIFIKASI 4.3. Tanpa skema database tidak ada dasar untuk menyimpulkan kolom itu milik tabel luar, jadi lebih aman memberi `None` dan warning daripada menebak. Pengecekan `self.scope is None` ditambahkan agar `INSERT ... VALUES` yang tidak membuat scope tidak crash. |
+| 5 | `INSERT ... SELECT` ditangani dengan memanggil kembali `self._select()` di dalam `_insert()`. Hasilnya dimasukkan ke node `Insert(table_name, columns, values=[], query=select_node)`. | Membuat fungsi pemrosesan SELECT khusus di dalam `_insert()`. | Satu aturan grammar dipetakan ke satu fungsi (Bab 6), jadi `_select()` yang sudah ada dipakai ulang agar penguraian `SELECT` konsisten di semua tempat. Hasilnya tabel target bernilai C dan tabel sumber bernilai R, sesuai SPESIFIKASI bagian 5. |
