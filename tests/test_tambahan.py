@@ -91,3 +91,26 @@ def test_t1_insert_select():
     script = parse_sql("INSERT INTO a (x) SELECT x FROM b;")
     assert script.errors == []
     assert script.statements[0].query is not None
+
+def test_edge_not_between():
+    """Kasus tepi: NOT BETWEEN, AND milik BETWEEN, bukan operator logika."""
+    script = parse_sql("SELECT a FROM t WHERE a NOT BETWEEN 1 AND 5 AND b = 2;")
+    assert script.errors == []
+    assert script.statements[0].where.op == "AND"
+
+
+def test_edge_is_not_null():
+    """Kasus tepi: IS NOT NULL harus diterima."""
+    assert parse_sql("SELECT a FROM t WHERE a IS NOT NULL;").errors == []
+
+
+def test_edge_titik_koma_ganda():
+    """Kasus tepi: ';;' tidak boleh menghasilkan error."""
+    script = parse_sql(";;SELECT a FROM t;;")
+    assert script.errors == []
+    assert len(script.statements) == 1
+
+
+def test_edge_perbandingan_tidak_berantai():
+    """Kasus tepi: a = 1 = 2 harus ditolak (spek 3.1, tidak berantai)."""
+    assert len(parse_sql("SELECT a FROM t WHERE a = 1 = 2;").errors) >= 1
