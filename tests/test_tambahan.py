@@ -10,6 +10,8 @@ import pytest
 from crud.lexer import tokenize, TokenType, LexError
 from crud.parser import parse_sql
 from crud.pipeline import analyze_source
+from crud.resolver import Resolver
+from crud.ast_nodes import ColumnRef, iter_nodes
 
 # ==========================================
 # 1. TEST REGRESI FASE 1: LEXER
@@ -142,3 +144,43 @@ def test_edge_titik_koma_ganda():
 def test_edge_perbandingan_tidak_berantai():
     """Kasus tepi: a = 1 = 2 harus ditolak (spek 3.1, tidak berantai)."""
     assert len(parse_sql("SELECT a FROM t WHERE a = 1 = 2;").errors) >= 1
+
+    # ==========================================
+# 4. TEST REGRESI FASE 3: RESOLVER
+# ==========================================
+
+def _resolve(sql):
+    script = parse_sql(sql)
+    diags = Resolver().resolve_script(script)
+    return script, diags
+
+
+def _cols(script):
+    return [n for n in iter_nodes(script) if isinstance(n, ColumnRef)]
+
+
+def test_bug7_alias_shadowing():
+    """Bug 7: alias subquery menutupi alias luar (spek 4.3, cari dari scope terdalam)."""
+    script, _ = _resolve("SELECT x.id FROM a x WHERE x.id IN (SELECT x.k FROM b x);")
+    hasil = {c.name: c.resolved for c in _cols(script)}
+    assert hasil["id"] == "a"
+    assert hasil["k"] == "b"
+
+
+def test_bug8_scope_delete_tidak_bocor():
+    """Bug 8: alias dari DELETE tidak boleh terlihat di statement berikutnya (spek 4.5)."""
+    script, diags = _resolve("DELETE FROM sesi s WHERE s.a < 1; SELECT s.id FROM pengguna u;")
+    assert any(d.level == "error" and "'s'" in d.message for d in diags)
+
+
+def test_t2_kolom_tanpa_qualifier_satu_tabel():
+    """T2: kolom tanpa qualifier di scope dengan satu tabel di-resolve ke tabel itu (spek 4.3)."""
+    script, _ = _resolve("SELECT nama FROM pelanggan WHERE aktif = 1;")
+    assert {c.resolved for c in _cols(script)} == {"pelanggan"}
+
+
+def test_t2_kolom_tanpa_qualifier_dua_tabel_ambigu():
+    """T2: dua tabel di scope terdalam -> warning 'ambigu', resolved tetap None (spek 4.3)."""
+    script, diags = _resolve("SELECT nama FROM pelanggan p, pesanan o;")
+    assert {c.resolved for c in _cols(script)} == {None}
+    assert any(d.level == "warning" and "ambigu" in d.message for d in diags)
