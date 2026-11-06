@@ -74,9 +74,9 @@ def test_bug4_presedensi_and_or():
 
 def test_bug5_left_outer_join():
     """Bug 5: LEFT OUTER JOIN harus diterima, OUTER opsional (spek 3)."""
-    res = analyze_source("SELECT a FROM t LEFT OUTER JOIN u ON t.id = u.id;")
-    assert res.parse_errors == []
-    assert res.statements[0].joins[0].kind == "LEFT"
+    script = parse_sql("SELECT a FROM t LEFT OUTER JOIN u ON t.id = u.id;")
+    assert script.errors == []
+    assert script.statements[0].joins[0].kind == "LEFT"
 
 
 def test_bug6_error_recovery_satu_error_per_statement():
@@ -88,6 +88,6 @@ def test_bug6_error_recovery_satu_error_per_statement():
 
 def test_t1_insert_select():
     """T1: INSERT ... SELECT harus bisa di-parse dan query-nya terisi."""
-    res = analyze_source("INSERT INTO a (x) SELECT x FROM b;")
-    assert res.parse_errors == []
-    assert res.statements[0].query is not None
+    script = parse_sql("INSERT INTO a (x) SELECT x FROM b;")
+    assert script.errors == []
+    assert script.statements[0].query is not None
