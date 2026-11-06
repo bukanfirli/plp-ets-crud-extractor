@@ -116,37 +116,7 @@ def test_bug9_subquery_in_update_is_read():
     assert res_e["pelanggan"] == {"R"}
 
 # ==========================================
-# TEST KASUS TEPI (EDGE CASES)
-# ==========================================
-
-def test_edge_case_comment_with_stars():
-    """Kasus Tepi 1: Komentar berisi karakter bintang di dalamnya."""
-    tokens = tokenize("/* komentar *** bintang */ SELECT 1")
-    assert tokens[0].type == TokenType.KEYWORD
-    assert tokens[0].value == "SELECT"
-
-def test_edge_not_between():
-    """Kasus tepi: NOT BETWEEN, AND milik BETWEEN, bukan operator logika."""
-    script = parse_sql("SELECT a FROM t WHERE a NOT BETWEEN 1 AND 5 AND b = 2;")
-    assert script.errors == []
-    assert script.statements[0].where.op == "AND"
-
-def test_edge_is_not_null():
-    """Kasus tepi: IS NOT NULL harus diterima."""
-    assert parse_sql("SELECT a FROM t WHERE a IS NOT NULL;").errors == []
-
-def test_edge_titik_koma_ganda():
-    """Kasus tepi: ';;' tidak boleh menghasilkan error."""
-    script = parse_sql(";;SELECT a FROM t;;")
-    assert script.errors == []
-    assert len(script.statements) == 1
-
-def test_edge_perbandingan_tidak_berantai():
-    """Kasus tepi: a = 1 = 2 harus ditolak (spek 3.1, tidak berantai)."""
-    assert len(parse_sql("SELECT a FROM t WHERE a = 1 = 2;").errors) >= 1
-
-    # ==========================================
-# 4. TEST REGRESI FASE 3: RESOLVER
+# 3. TEST REGRESI FASE 3: RESOLVER
 # ==========================================
 
 def _resolve(sql):
@@ -184,3 +154,33 @@ def test_t2_kolom_tanpa_qualifier_dua_tabel_ambigu():
     script, diags = _resolve("SELECT nama FROM pelanggan p, pesanan o;")
     assert {c.resolved for c in _cols(script)} == {None}
     assert any(d.level == "warning" and "ambigu" in d.message for d in diags)
+    
+# ==========================================
+# TEST KASUS TEPI (EDGE CASES)
+# ==========================================
+
+def test_edge_case_comment_with_stars():
+    """Kasus Tepi 1: Komentar berisi karakter bintang di dalamnya."""
+    tokens = tokenize("/* komentar *** bintang */ SELECT 1")
+    assert tokens[0].type == TokenType.KEYWORD
+    assert tokens[0].value == "SELECT"
+
+def test_edge_not_between():
+    """Kasus tepi: NOT BETWEEN, AND milik BETWEEN, bukan operator logika."""
+    script = parse_sql("SELECT a FROM t WHERE a NOT BETWEEN 1 AND 5 AND b = 2;")
+    assert script.errors == []
+    assert script.statements[0].where.op == "AND"
+
+def test_edge_is_not_null():
+    """Kasus tepi: IS NOT NULL harus diterima."""
+    assert parse_sql("SELECT a FROM t WHERE a IS NOT NULL;").errors == []
+
+def test_edge_titik_koma_ganda():
+    """Kasus tepi: ';;' tidak boleh menghasilkan error."""
+    script = parse_sql(";;SELECT a FROM t;;")
+    assert script.errors == []
+    assert len(script.statements) == 1
+
+def test_edge_perbandingan_tidak_berantai():
+    """Kasus tepi: a = 1 = 2 harus ditolak (spek 3.1, tidak berantai)."""
+    assert len(parse_sql("SELECT a FROM t WHERE a = 1 = 2;").errors) >= 1
