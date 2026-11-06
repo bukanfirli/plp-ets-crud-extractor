@@ -1,0 +1,155 @@
+﻿===== data\sample\audit.sql =====
+--- baris 2 ---
+Select
+  columns:
+    SelectItem
+      expr:
+        ColumnRef qualifier='p' name='id' -> pelanggan
+    SelectItem
+      expr:
+        ColumnRef qualifier='p' name='nama' -> pelanggan
+  sources:
+    TableRef name='pelanggan' alias='p'
+    TableRef name='pesanan' alias='o'
+  where:
+    BinaryOp op='OR'
+      left:
+        BinaryOp op='AND'
+          left:
+            BinaryOp op='='
+              left:
+                ColumnRef qualifier='o' name='pelanggan_id' -> pesanan
+              right:
+                ColumnRef qualifier='p' name='id' -> pelanggan
+          right:
+            Between
+              expr:
+                ColumnRef qualifier='o' name='tanggal' -> pesanan
+              low:
+                Param name=':mulai'
+              high:
+                Param name=':akhir'
+      right:
+        BinaryOp op='AND'
+          left:
+            BinaryOp op='='
+              left:
+                ColumnRef qualifier='p' name='level' -> pelanggan
+              right:
+                Literal value='gold' kind='string'
+          right:
+            BinaryOp op='='
+              left:
+                ColumnRef qualifier='p' name='aktif' -> pelanggan
+              right:
+                Literal value='1' kind='number'
+--- baris 8 ---
+Select
+  columns:
+    SelectItem
+      expr:
+        ColumnRef qualifier='p' name='nama' -> pelanggan
+  sources:
+    TableRef name='pelanggan' alias='p'
+  where:
+    Exists
+      query:
+        Select
+          columns:
+            SelectItem
+              expr:
+                Literal value='1' kind='number'
+          sources:
+            TableRef name='pembayaran' alias='b'
+          where:
+            BinaryOp op='AND'
+              left:
+                BinaryOp op='='
+                  left:
+                    ColumnRef qualifier='b' name='pelanggan_id' -> pembayaran
+                  right:
+                    ColumnRef qualifier='p' name='id' -> pelanggan
+              right:
+                BinaryOp op='='
+                  left:
+                    ColumnRef qualifier='b' name='status' -> pembayaran
+                  right:
+                    Literal value='GAGAL' kind='string'
+--- baris 12 ---
+Select
+  columns:
+    SelectItem
+      expr:
+        ColumnRef qualifier='x' name='id' -> pelanggan
+  sources:
+    TableRef name='pelanggan' alias='x'
+  where:
+    InExpr
+      expr:
+        ColumnRef qualifier='x' name='id' -> pelanggan
+      query:
+        Select
+          columns:
+            SelectItem
+              expr:
+                ColumnRef qualifier='x' name='pelanggan_id' -> pelanggan
+          sources:
+            TableRef name='pesanan' alias='x'
+          where:
+            BinaryOp op='>'
+              left:
+                ColumnRef qualifier='x' name='total' -> pelanggan
+              right:
+                Literal value='500000' kind='number'
+--- baris 16 ---
+Delete
+  table:
+    TableRef name='sesi' alias='s'
+  where:
+    BinaryOp op='<'
+      left:
+        ColumnRef qualifier='s' name='kedaluwarsa' -> sesi
+      right:
+        Param name=':sekarang'
+--- baris 18 ---
+Select
+  columns:
+    SelectItem
+      expr:
+        ColumnRef qualifier='s' name='id' -> sesi
+  sources:
+    TableRef name='pengguna' alias='u'
+  where:
+    BinaryOp op='='
+      left:
+        ColumnRef qualifier='u' name='aktif' -> pengguna
+      right:
+        Literal value='1' kind='number'
+--- baris 20 ---
+Update
+  table:
+    TableRef name='pesanan'
+  assignments:
+    Assignment
+      column:
+        ColumnRef name='status'
+      value:
+        Literal value='BATAL' kind='string'
+  where:
+    InExpr
+      expr:
+        ColumnRef name='pelanggan_id'
+      query:
+        Select
+          columns:
+            SelectItem
+              expr:
+                ColumnRef name='id'
+          sources:
+            TableRef name='pelanggan'
+          where:
+            BinaryOp op='='
+              left:
+                ColumnRef name='diblokir'
+              right:
+                Literal value='1' kind='number'
