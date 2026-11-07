@@ -18,7 +18,7 @@
 | **Reproduksi minimal** | `INSERT INTO a (x) SELECT x FROM b;`<br>Hasil kode lama: `ParseError`, "INSERT ... SELECT belum didukung". Seharusnya berhasil di-parse, `a` bernilai C dan `b` bernilai R. |
 | **Akar masalah** | Cabang SELECT di fungsi `_insert` sengaja diisi `raise ParseError`, jadi fitur ini memang belum ada. Pada recursive descent (Bab 6), satu aturan grammar dipetakan ke satu fungsi dan boleh dipanggil ulang dari aturan lain. Karena grammar `insert_stmt` memakai `select_stmt` yang sama, `_insert` cukup memanggil `_select()` yang sudah ada. |
 | **Perbaikan** | Pada fungsi `_insert()` di file `crud/parser.py`, cabang pengecekan `TokenType.KEYWORD` bernilai `'SELECT'` diubah dengan memanggil method `self._select()`. Hasil kembalian AST dari `_select()` dimasukkan sebagai parameter `query` pada konstruktor node AST `Insert(table_name, columns, values=[], query=select_node)`. |
-| **Alternatif ditolak** | Membuat fungsi pemrosesan SELECT khusus di dalam `_insert()`. Ditolak karena melanggar prinsip modularitas Recursive Descent Parsing, di mana satu aturan grammar dipetakan ke satu fungsi, sehingga `_select()` yang sudah ada seharusnya dipanggil ulang. Dengan begitu penguraian klausa SELECT tetap konsisten di semua tempat, termasuk di subquery dan `INSERT ... SELECT`, dan perubahan aturan SELECT di masa depan cukup dilakukan di satu fungsi. |
+| **Alternatif ditolak** | - |
 | **Test regresi** | `test_t1_insert_select` |
 | **Peran AI** | AI membantu mengidentifikasi pemanggilan fungsi `self._select()` di dalam fungsi `_insert()` pada `crud/parser.py`. Verifikasi dilakukan dengan memastikan pengujian `test_t1_insert_select` berubah dari MERAH (`ParseError`) menjadi HIJAU (PASSED) dan seluruh 12 pengujian pada `tests/test_parser.py` bernilai PASSED. |
 
@@ -84,7 +84,7 @@
 | **Reproduksi minimal** | `SELECT a FROM t WHERE a <> b;`<br>Hasil kode lama: `<>` terpecah menjadi `<` dan `>`, lalu `ParseError` "diharapkan ekspresi, ditemukan '>'". Seharusnya satu token `OP` `<>`. |
 | **Akar masalah** | Cabang penanganan `ch == "<"` pada fungsi `_scan_token` di `crud/lexer.py` hanya mengecek `self._match("=")` untuk operator `<=`, tanpa mengecek kemungkinan karakter `>` untuk operator `<>`. |
 | **Perbaikan** | Menambahkan cabang `elif self._match(">"): op = "<>"` pada cabang `ch == "<"` agar lexer mengenali operator `<>` sebagai satu token. |
-| **Alternatif ditolak** | Membiarkan lexer menghasilkan 2 token dan menggabungkannya di Parser. Ditolak karena melanggar aturan pembagian tugas antara Lexer dan Parser. |
+| **Alternatif ditolak** | - |
 | **Test regresi** | `test_bug2_maximal_munch` |
 | **Peran AI** | AI menunjukkan percabangan `_match` yang hilang. Diverifikasi dengan pengujian Pytest. |
 
@@ -132,7 +132,7 @@
 | **Reproduksi minimal** | `SELECT a FROM t LEFT OUTER JOIN u ON t.id = u.id;`<br>Hasil kode lama: `ParseError`, "diharapkan JOIN, ditemukan 'OUTER'". Seharusnya berhasil di-parse dengan jenis join `LEFT`. |
 | **Akar masalah** | Setelah `LEFT`, fungsi `_join` langsung menuntut `JOIN` dengan `_expect_kw`, padahal grammar menandai `OUTER` sebagai bagian opsional. Di recursive descent, bagian opsional `[ ... ]` dipetakan ke pemeriksaan yang boleh gagal (`_match_kw`), bukan ke pemeriksaan wajib (`_expect_kw`) yang melempar error. |
 | **Perbaikan** | Pada fungsi `_join` di `crud/parser.py`, ditambahkan pemeriksaan opsional `self._match_kw("OUTER")` setelah kata kunci `LEFT` terdeteksi, sebelum memvalidasi kata kunci utama `JOIN`. |
-| **Alternatif ditolak** | Memasukkan `LEFT OUTER` sebagai satu kesatuan token baru di Lexer. Ditolak karena `LEFT` dan `OUTER` adalah dua token `KEYWORD` terpisah yang penanganannya merupakan tanggung jawab Parser. |
+| **Alternatif ditolak** | - |
 | **Test regresi** | `test_bug5_left_outer_join` |
 | **Peran AI** | AI membantu mengidentifikasi posisi penyelipan `self._match_kw("OUTER")` di fungsi `_join`. Diverifikasi dengan mengecek status Pytest berubah dari MERAH menjadi HIJAU. |
 
@@ -180,7 +180,7 @@
 | **Reproduksi minimal** | `DELETE FROM sesi s WHERE s.a < 1; SELECT s.id FROM pengguna u;` |
 | **Akar masalah** | `_delete` membuka scope baru dengan `_push()` tetapi tidak pernah menutupnya dengan `_pop()`. Pada Bab 11, `beginScope` harus berpasangan dengan `endScope`. Scope DELETE tersisa, sehingga statement berikutnya masih melihat alias `s`. `_select` dan `_update` sudah berpasangan dengan benar. |
 | **Perbaikan** | File `crud/resolver.py`, fungsi `_delete`: menambahkan `self._pop()` di akhir. |
-| **Alternatif ditolak** | Mereset `self.scope` menjadi `None` di `resolve_statement`. Ditolak karena hanya menutupi gejala, tidak memperbaiki push dan pop yang tidak seimbang, dan bisa menyembunyikan bug serupa di kemudian hari. |
+| **Alternatif ditolak** | - |
 | **Test regresi** | `test_bug8_scope_delete_tidak_bocor` |
 | **Peran AI** | AI membantu membandingkan `_delete` dengan `_update` sehingga `_pop` yang hilang ketahuan. Test dijalankan merah lebih dulu (tidak ada error alias 's'), lalu hijau setelah perbaikan, dan seluruh test lulus. |
 
