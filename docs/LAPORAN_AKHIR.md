@@ -65,9 +65,9 @@ SELECT id nama, FROM pesanan;   -- campuran_error.sql baris 4
 
 ### 3. Kesalahan Kata di Dalam Komentar dan String Literal Terikut Sebagai Tabel
 
-**a. SQL:** `laporan_penjualan.sql` baris 1-3 (`-- DELETE FROM pelanggan` dan `'FROM rahasia'`).
+**a. SQL:** `laporan_penjualan.sql` baris 2 dan 6 (komentar -- DELETE FROM pelanggan dan string 'FROM rahasia').
 
-**b. Kesalahan Regex:** Regex membaca `pelanggan` di dalam komentar sebagai D & R, serta `'rahasia'` di dalam string sebagai tabel R.
+**b. Kesalahan Regex:** Regex membaca pelanggan di dalam komentar sebagai D dan R, serta rahasia di dalam string sebagai tabel R. Regex juga memotong teks per ;, sehingga komentar baris 1-2 ikut masuk potongan pertama. Kata DELETE di komentar baris 2 ditemukan lebih dulu, jadi seluruh statement dianggap mulai di baris 2, bukan baris 3 (letak SELECT). Akibatnya hasil yang benar di baris 3, yaitu (3, pelanggan, R) dan (3, pesanan, R), terlewat (FN).
 
 **c. Mengapa Parser Benar:** Sesuai konsep Lexing/Scanning (Bab 4), Lexer membuang seluruh isi komentar sehingga tidak menghasilkan token. Selain itu, teks dalam kutip tunggal dibungkus menjadi satu token `STRING` utuh. Parser hanya memproses token `IDENT` pada posisi grammar yang valid.
 
