@@ -196,7 +196,7 @@ class Lexer:
         if upper_text in KEYWORDS:
             self._add(TokenType.KEYWORD, upper_text, line, col)
         else:
-            self._add(TokenType.IDENT, text.lower(), line, col)
+            self._add(TokenType.IDENT, text, line, col)
 
 
 def tokenize(source: str) -> list[Token]:
